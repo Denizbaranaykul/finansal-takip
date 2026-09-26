@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bütçem & Harcama Takip | Modern Finans Yönetimi</title>
+  <meta name="description" content="Kişisel gelir ve harcamalarınızı kategorilere göre takip edin, Firebase ile güvenle senkronize edin ve detaylı grafiklerle finansal durumunuzu analiz edin.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  
+</head>
+<body class="dark-theme auth-locked">
+  <!-- Arka plan glow efektleri -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <!-- Üst Navbar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Bütçem<span class="brand-accent">Pro</span></span>
+          <span class="brand-subtitle">Gelir & Harcama Takip</span>
+        </div>
+      </div>
+
+      <!-- Ay ve Yıl Seçici Filtre -->
+      <div class="month-selector-wrapper" id="monthSelectorWrapper">
+        <button class="icon-btn" id="prevMonthBtn" title="Önceki Ay">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="current-month-display" id="currentMonthDisplay">
+          <i class="fa-regular fa-calendar"></i>
+          <span id="selectedPeriodText">Eylül 2026</span>
+        </div>
+        <button class="icon-btn" id="nextMonthBtn" title="Sonraki Ay">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Kullanıcı & Aksiyon Alanı -->
+      <div class="nav-actions">
+        <!-- Firebase Durum Rozeti -->
+        <button class="status-badge" id="firebaseStatusBadge" title="Firebase Bağlantı Durumu">
+          <span class="status-dot status-loading"></span>
+          <span class="status-text" id="firebaseStatusText">Bağlanıyor...</span>
+        </button>
+
+        <!-- Kullanıcı Giriş Durumu -->
+        <div class="user-menu" id="userMenu">
+          <button class="btn btn-secondary btn-sm" id="navLoginBtn">
+            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            <span>Giriş Yap</span>
+          </button>
+
+          <div class="user-profile-widget hidden" id="userProfileWidget">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <div class="user-info">
+              <span class="user-email" id="userEmail">kullanici@ornek.com</span>
+            </div>
+            <button class="icon-btn logout-btn" id="logoutBtn" title="Çıkış Yap">
+              <i class="fa-solid fa-power-off"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Firebase Kurulum Bilgilendirme Çubuğu (Gerekirse açılır) -->
+  <div class="config-banner hidden" id="configNoticeBanner">
+    <div class="config-banner-content">
+      <div class="banner-icon"><i class="fa-solid fa-circle-info"></i></div>
+      <div class="banner-text">
+        <strong>Firebase Bilgileri Bekleniyor:</strong> Gerçek Firebase veritabanı senkronizasyonu için <code>js/firebase-config.js</code> dosyasını açıp bilgilerinizi ekleyin. Şu anda <strong>Demo Modu (Yerel Hafıza)</strong> devrede!
+      </div>
+      <button class="btn btn-outline-white btn-sm" id="openConfigHelpBtn">
+        <i class="fa-solid fa-key"></i> Nasıl Yapılır?
+      </button>
+      <button class="banner-close" id="closeBannerBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+
+  <!-- Ana İçerik -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Hızlı İşlem Ekleme & Özet Başlığı -->
+      <div class="dashboard-header">
+        <div>
+          <h1 class="page-title">Finansal Genel Bakış</h1>
+          <p class="page-subtitle" id="dashboardSubtitle">Aylık para giriş ve çıkışlarınızı anlık olarak yönetin</p>
+        </div>
+        <div class="header-action-group">
+          <button class="btn btn-outline" id="importDataBtn" title="Eylül 2026 verilerini veya CSV içe aktar">
+            <i class="fa-solid fa-file-arrow-up"></i>
+            <span>İçe Aktar</span>
+          </button>
+          <button class="btn btn-outline" id="exportDataBtn" title="İşlemleri CSV olarak indir">
+            <i class="fa-solid fa-file-arrow-down"></i>
+            <span>Dışa Aktar</span>
+          </button>
+          <button class="btn btn-success" id="openAddIncomeBtn">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Gelir Ekle</span>
+          </button>
+          <button class="btn btn-danger" id="openAddExpenseBtn">
+            <i class="fa-solid fa-minus-circle"></i>
+            <span>Harcama Ekle</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hızlı Veri Yükleme Bildirim Çubuğu -->
+      <div class="config-banner quick-sync-banner hidden" id="quickSyncNoticeBanner">
+        <div class="config-banner-content">
+          <div class="banner-text-wrapper">
+            <div class="banner-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <div class="banner-text">
+              <strong>Eylül 2026 Verileri:</strong> 36 adet gelir ve harcama kaydı hazır. Açık oturumunuza tek tıkla yükleyebilirsiniz.
+            </div>
+          </div>
+          <div class="banner-action-wrapper">
+            <button class="btn btn-primary btn-sm" id="quickSyncDataBtn">
+              <i class="fa-solid fa-bolt"></i> <span>Oturuma Aktar (36 Kayıt)</span>
+            </button>
+            <button class="banner-close" id="closeQuickSyncBannerBtn" title="Kapat"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Özet İstatistik Kartları -->
+      <div class="stats-grid">
+        <!-- Toplam Gelir -->
+        <div class="stat-card stat-income">
+          <div class="stat-header">
+            <span class="stat-title">Toplam Para Girişi</span>
+            <div class="stat-icon income-icon">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="totalIncomeValue">₺0,00</div>
+          <div class="stat-footer">
+            <span class="stat-badge income-badge" id="incomeCountBadge">0 işlem</span>
+            <span class="stat-meta">Bu ayki toplam gelir</span>
+          </div>
+        </div>
+
+        <!-- Toplam Harcama -->
+        <div class="stat-card stat-expense">
+          <div class="stat-header">
+            <span class="stat-title">Toplam Harcama</span>
+            <div class="stat-icon expense-icon">
+              <i class="fa-solid fa-arrow-trend-down"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="totalExpenseValue">₺0,00</div>
+          <div class="stat-footer">
+            <span class="stat-badge expense-badge" id="expenseCountBadge">0 işlem</span>
+            <span class="stat-meta">Bu ayki toplam gider</span>
+          </div>
+        </div>
+
+        <!-- Net Bakiye -->
+        <div class="stat-card stat-balance" id="netBalanceCard">
+          <div class="stat-header">
+            <span class="stat-title">Kalan Net Bakiye</span>
+            <div class="stat-icon balance-icon">
+              <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+          </div>
+          <div class="stat-value" id="netBalanceValue">₺0,00</div>
+          <div class="stat-footer">
+            <span class="stat-badge balance-badge" id="savingsRateBadge">%0 Tasarruf</span>
+            <span class="stat-meta" id="balanceHealthText">Gelir/Gider Dengeli</span>
+          </div>
+        </div>
+
+        <!-- En Yüksek Harcama Kategorisi -->
+        <div class="stat-card stat-highlight">
+          <div class="stat-header">
+            <span class="stat-title">En Çok Harcanan</span>
+            <div class="stat-icon highlight-icon">
+              <i class="fa-solid fa-fire"></i>
+            </div>
+          </div>
+          <div class="stat-value small-value" id="topExpenseCategory">-</div>
+          <div class="stat-footer">
+            <span class="stat-badge highlight-badge" id="topExpenseAmount">₺0,00</span>
+            <span class="stat-meta">Harcamaların lideri</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafikler ve Dağılım Bölümü -->
+      <div class="analytics-grid">
+        <!-- Harcama Kategori Dağılımı Grafiği -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-chart-pie chart-title-icon"></i>
+              <div>
+                <h3 class="card-title">Harcama Kategori Dağılımı</h3>
+                <span class="card-subtitle">Hangi alana ne kadar harcadınız?</span>
+              </div>
+            </div>
+            <div class="chart-type-toggle">
+              <span class="tag" id="expenseChartCountTag">0 Kategori</span>
+            </div>
+          </div>
+          <div class="chart-container doughnut-wrapper">
+            <canvas id="expenseCategoryChart"></canvas>
+            <div class="chart-empty-state hidden" id="doughnutEmptyState">
+              <i class="fa-solid fa-chart-pie"></i>
+              <p>Bu dönem için henüz harcama kaydı yok</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aylık Trend & Gelir-Gider Bar Grafiği -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <i class="fa-solid fa-chart-column chart-title-icon"></i>
+              <div>
+                <h3 class="card-title">Aylık Gelir vs Gider</h3>
+                <span class="card-subtitle">Son 6 aylık finansal karşılaştırma</span>
+              </div>
+            </div>
+            <div class="legend-pills">
+              <span class="legend-pill income"><span class="legend-dot"></span> Gelir</span>
+              <span class="legend-pill expense"><span class="legend-dot"></span> Gider</span>
+            </div>
+          </div>
+          <div class="chart-container bar-wrapper">
+            <canvas id="monthlyTrendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- İşlem Listesi ve Filtreleme Bölümü -->
+      <div class="card transactions-card">
+        <div class="card-header flex-between flex-wrap gap-md">
+          <div class="card-title-group">
+            <i class="fa-solid fa-receipt chart-title-icon"></i>
+            <div>
+              <h3 class="card-title">İşlem Geçmişi</h3>
+              <span class="card-subtitle" id="transactionListSubtitle">Seçili döneme ait kayıtlar</span>
+            </div>
+          </div>
+
+          <!-- Filtre ve Arama Araç Çubuğu -->
+          <div class="filter-toolbar">
+            <!-- Arama Kutusu -->
+            <div class="search-input-wrapper">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="searchInput" placeholder="İşlem veya kategori ara..." autocomplete="off">
+              <button class="clear-search hidden" id="clearSearchBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Tür Filtresi (Tümü / Gelir / Gider) -->
+            <div class="tab-group" id="typeFilterTabs">
+              <button class="tab-btn active" data-type="all">Tümü</button>
+              <button class="tab-btn tab-income" data-type="income">Gelirler</button>
+              <button class="tab-btn tab-expense" data-type="expense">Giderler</button>
+            </div>
+
+            <!-- Kategori Seçim Menüsü -->
+            <div class="category-select-wrapper" title="Aşağıdaki listede sadece seçtiğiniz kategoriye ait işlemler gösterilir">
+              <label for="categoryFilterSelect" class="category-select-label">
+                <i class="fa-solid fa-tags"></i>
+                <span>Kategori:</span>
+              </label>
+              <div class="category-select-inner">
+                <select class="select-dropdown category-filter-select" id="categoryFilterSelect" aria-label="Kategori Seç">
+                  <option value="all">Tüm Kategoriler</option>
+                  <!-- Dinamik dolacak -->
+                </select>
+                <i class="fa-solid fa-chevron-down select-chevron-icon"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hızlı Kategori Seçim Çubuğu (Chips Bar) -->
+        <div class="category-chips-container" id="categoryChipsContainer">
+          <div class="category-chips-header">
+            <span class="chips-title"><i class="fa-solid fa-layer-group"></i> Hızlı Kategori Filtresi:</span>
+          </div>
+          <div class="category-chips-scroll" id="categoryChipsBar">
+            <!-- Dinamik Kategori Hapları JavaScript ile doldurulacak -->
+          </div>
+        </div>
+
+        <!-- Aktif Kategori Filtresi Bilgi Çubuğu (Kategori seçilince görünür) -->
+        <div class="active-category-indicator hidden" id="activeCategoryIndicator">
+          <div class="indicator-left">
+            <span class="indicator-badge">
+              <i class="fa-solid fa-filter"></i>
+              <span>Filtrelenen Kategori:</span>
+              <strong id="activeCategoryName">Tümü</strong>
+            </span>
+            <span class="indicator-meta" id="activeCategoryStats">0 işlem • ₺0,00</span>
+          </div>
+          <button type="button" class="btn-clear-cat-filter" id="clearCategoryFilterBtn" title="Kategori filtresini temizle ve tüm işlemleri göster">
+            <i class="fa-solid fa-xmark"></i> Filtreyi Temizle (Tümünü Göster)
+          </button>
+        </div>
+
+        <!-- İşlem Listesi Tablosu / Kartları -->
+        <div class="transactions-container">
+          <div class="table-responsive">
+            <table class="transaction-table" id="transactionTable">
+              <thead>
+                <tr>
+                  <th style="width: 140px;">Tarih</th>
+                  <th style="width: 170px;">Tür & Kategori</th>
+                  <th>Açıklama / Başlık</th>
+                  <th style="width: 180px; text-align: right;">Tutar</th>
+                  <th style="width: 110px; text-align: center;">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody id="transactionTableBody">
+                <!-- Dinamik JavaScript ile doldurulacak -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Boş Durum (Empty State) -->
+          <div class="empty-state hidden" id="emptyState">
+            <div class="empty-icon">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <h4 class="empty-title" id="emptyStateTitle">Henüz İşlem Bulunmuyor</h4>
+            <p class="empty-desc" id="emptyStateDesc">Bu dönem için harcama veya gelir kaydı girmediniz. Hemen yukarıdaki butonları kullanarak ilk kaydınızı oluşturun!</p>
+            <div class="empty-actions">
+              <button class="btn btn-secondary btn-sm hidden" id="emptyResetFilterBtn">
+                <i class="fa-solid fa-filter-circle-xmark"></i> Filtreyi Temizle
+              </button>
+              <button class="btn btn-success btn-sm" id="emptyAddIncomeBtn">
+                <i class="fa-solid fa-plus"></i> Gelir Ekle
+              </button>
+              <button class="btn btn-danger btn-sm" id="emptyAddExpenseBtn">
+                <i class="fa-solid fa-minus"></i> Harcama Ekle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== MODALLAR ==================== -->
+
+  <!-- İşlem Ekleme / Düzenleme Modalı -->
+  <div class="modal-backdrop hidden" id="transactionModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" id="modalTypeBadge">
+            <i class="fa-solid fa-plus"></i>
+          </div>
+          <h3 class="modal-title" id="modalTitle">Yeni İşlem Ekle</h3>
+        </div>
+        <button class="modal-close-btn" id="closeTransactionModalBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="transactionForm">
+        <!-- Gizli ID Alanı (Düzenleme için) -->
+        <input type="hidden" id="editTransactionId" value="">
+
+        <!-- Tür Seçimi (Gelir / Gider Sekmesi) -->
+        <div class="form-group">
+          <label class="form-label">İşlem Türü</label>
+          <div class="type-toggle-switch">
+            <label class="type-radio-label expense-label">
+              <input type="radio" name="transactionType" value="expense" id="typeExpenseRadio" checked>
+              <span class="type-button">
+                <i class="fa-solid fa-arrow-trend-down"></i> Harcama (Gider)
+              </span>
+            </label>
+            <label class="type-radio-label income-label">
+              <input type="radio" name="transactionType" value="income" id="typeIncomeRadio">
+              <span class="type-button">
+                <i class="fa-solid fa-arrow-trend-up"></i> Para Girişi (Gelir)
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tutar & Tarih Satırı -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label" for="amountInput">Tutar (₺) <span class="required">*</span></label>
+            <div class="input-with-symbol">
+              <span class="currency-symbol">₺</span>
+              <input type="number" id="amountInput" step="0.01" min="0.01" placeholder="0,00" required autocomplete="off">
+            </div>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="dateInput">Tarih <span class="required">*</span></label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-calendar input-icon"></i>
+              <input type="date" id="dateInput" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategori Seçimi -->
+        <div class="form-group">
+          <label class="form-label" for="categorySelect">Kategori <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-tags input-icon"></i>
+            <select id="categorySelect" required class="form-select">
+              <!-- Dinamik olarak harcama/gelir türüne göre dolacak -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Başlık / İşlem Adı -->
+        <div class="form-group">
+          <label class="form-label" for="titleInput">Başlık / İşlem Tanımı <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-pen-clip input-icon"></i>
+            <input type="text" id="titleInput" placeholder="Örn: Migros Market, Maaş, Elektrik Faturası" required autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Ekstra Açıklama / Not -->
+        <div class="form-group">
+          <label class="form-label" for="descriptionInput">Açıklama / Not (Opsiyonel)</label>
+          <textarea id="descriptionInput" rows="2" placeholder="Fiş no, taksit detayı veya kısa not ekleyin..."></textarea>
+        </div>
+
+        <!-- Modal Butonları -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelTransactionBtn">İptal</button>
+          <button type="submit" class="btn btn-primary" id="saveTransactionBtn">
+            <i class="fa-solid fa-check"></i>
+            <span id="saveBtnText">Kaydet</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Giriş / Kayıt Ol Modalı (Firebase Auth) -->
+  <div class="modal-backdrop hidden" id="authModal">
+    <div class="modal-card auth-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge auth-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="authModalTitle">Hesabınıza Giriş Yapın</h3>
+            <span class="modal-subtitle" id="authModalSubtitle">BütçemPro • Devam etmek için giriş yapın</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auth Sekmeleri (Giriş Yap / Kayıt Ol) -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tabLogin" type="button">
+          <i class="fa-solid fa-right-to-bracket" style="margin-right: 6px;"></i> Giriş Yap
+        </button>
+        <button class="auth-tab-btn" id="tabRegister" type="button">
+          <i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> Kayıt Ol
+        </button>
+      </div>
+
+      <form id="authForm">
+        <!-- E-posta -->
+        <div class="form-group">
+          <label class="form-label" for="authEmail">E-Posta Adresi</label>
+          <div class="input-with-icon">
+            <i class="fa-regular fa-envelope input-icon"></i>
+            <input type="email" id="authEmail" placeholder="ornek@email.com" required autocomplete="email">
+          </div>
+        </div>
+
+        <!-- Şifre -->
+        <div class="form-group">
+          <label class="form-label" for="authPassword">Şifre</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input type="password" id="authPassword" placeholder="En az 6 karakter" required minlength="6" autocomplete="current-password">
+          </div>
+        </div>
+
+        <!-- Auth Hata Bildirimi -->
+        <div class="auth-error-msg hidden" id="authErrorMsg">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span id="authErrorText">Hatalı bilgi girdiniz</span>
+        </div>
+
+        <!-- Submit Butonu -->
+        <div class="form-group mt-lg" style="margin-bottom: 0;">
+          <button type="submit" class="btn btn-primary btn-block" id="authSubmitBtn">
+            <i class="fa-solid fa-right-to-bracket" id="authSubmitIcon"></i>
+            <span id="authSubmitBtnText">Giriş Yap</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase Yapılandırma Rehberi Modalı -->
+  <div class="modal-backdrop hidden" id="configGuideModal">
+    <div class="modal-card config-guide-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge guide-badge">
+            <i class="fa-solid fa-fire-flame-curved"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Firebase Bağlantı Rehberi</h3>
+            <span class="modal-subtitle">Kendi Firebase projenizi 2 dakikada bağlayın</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeConfigGuideModalBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="guide-content">
+        <div class="guide-step">
+          <div class="step-num">1</div>
+          <div class="step-desc">
+            <strong>Firebase Konsolu:</strong> <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> adresine gidin ve yeni bir proje açın (veya var olanı seçin).
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="step-num">2</div>
+          <div class="step-desc">
+            <strong>Servisleri Etkinleştirin:</strong>
+            <ul>
+              <li><strong>Authentication:</strong> Sol menüden <em>Authentication -> Get Started</em> tıklayın, <em>Email/Password</em> sağlayıcısını etkinleştirin.</li>
+              <li><strong>Cloud Firestore:</strong> Sol menüden <em>Firestore Database -> Create Database</em> tıklayın, test modunda başlatın.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="step-num">3</div>
+          <div class="step-desc">
+            <strong>Config Bilgilerinizi Kopyalayın:</strong> Proje Ayarları (Project Settings) -> Genel (General) altından Web Uygulaması (&lt;/&gt;) ekleyin ve verilen <code>firebaseConfig</code> objesini kopyalayın.
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <div class="step-num">4</div>
+          <div class="step-desc">
+            <strong>js/firebase-config.js dosyasına yapıştırın:</strong> Projenizdeki <code>js/firebase-config.js</code> dosyasını açıp config alanına yapıştırıp kaydedin. Sayfayı yenilediğinizde sağ üstteki gösterge yeşil olacaktır!
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="gotItConfigBtn">Anladım, Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Silme Onay Modalı -->
+  <div class="modal-backdrop hidden" id="deleteConfirmModal">
+    <div class="modal-card delete-card">
+      <div class="delete-icon-wrapper">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="modal-title text-center">İşlemi Silmek İstiyor musunuz?</h3>
+      <p class="text-center text-muted" id="deleteConfirmText">Bu işlem kalıcı olarak silinecektir.</p>
+      
+      <div class="modal-footer justify-center">
+        <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Vazgeç</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+          <i class="fa-solid fa-trash"></i> Evet, Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV / Veri İçe Aktarma Modalı -->
+  <div class="modal-backdrop hidden" id="importModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" style="background: var(--primary);">
+            <i class="fa-solid fa-file-arrow-up"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Verileri İçe Aktar</h3>
+            <span class="modal-subtitle">Eylül 2026 verilerinizi veya CSV dosyanızı yükleyin</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeImportModalBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="import-modal-body">
+        <!-- Hazır 36 İşlem Kartı -->
+        <div class="preload-card">
+          <div class="preload-card-content">
+            <div class="preload-info">
+              <div class="preload-title">
+                <i class="fa-solid fa-calendar-check text-primary" style="margin-right: 6px;"></i>
+                Eylül 2026 Hazır Listesi (36 İşlem)
+              </div>
+              <div class="preload-desc">
+                3 Gelir (18.000 ₺) + 33 Harcama (9.921 ₺) • Yeni kategorilere ayrılmış
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="loadPreloadedDataBtn">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span id="loadPreloadedBtnText">Bu Verileri Oturuma Aktar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Özel CSV Yükleme -->
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="csvFileInput">Veya Farklı Bir CSV Dosyası Yükleyin (.csv)</label>
+          <input type="file" id="csvFileInput" accept=".csv" class="form-input csv-file-input">
+          <small class="text-muted csv-help-text">
+            Format: Tarih,Tür,Kategori,Başlık,Açıklama,Tutar (TL)
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="closeImportModalFooterBtn">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Bildirim Konteyneri -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Firebase Modular SDK Scriptleri (ES Modules) -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/firebase-service.js"></script>
+  <script type="module" src="js/charts.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
