@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * BÜTÇEM PRO - FIREBASE & VERİ SERVİSİ (firebase-service.js)
+ * FİNANSAL TAKİP - FIREBASE & VERİ SERVİSİ (firebase-service.js)
  * ===================================================================
  * Firebase Modular SDK (v10) ile Auth ve Firestore entegrasyonu sağlar.
  * Yapılandırma eksikse pürüzsüz LocalStorage Demo modu sunar.
@@ -34,8 +34,28 @@ let firebaseModules = {
 };
 
 // Yerel Demo Depolama Anahtarları
-const LOCAL_STORAGE_KEY = 'butcem_demo_transactions';
-const LOCAL_USER_KEY = 'butcem_demo_user';
+const LOCAL_STORAGE_KEY = 'finansal_takip_demo_transactions';
+const LOCAL_USER_KEY = 'finansal_takip_demo_user';
+const LOCAL_ACCOUNTS_KEY = 'finansal_takip_demo_registered_accounts';
+const SYNC_KEY = 'finansal_takip_september_2026_synced_v1';
+
+// Geriye dönük uyumluluk: Eski verileri yeni anahtarlara aktar
+try {
+  if (!localStorage.getItem(LOCAL_STORAGE_KEY) && localStorage.getItem('butcem_demo_transactions')) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, localStorage.getItem('butcem_demo_transactions'));
+  }
+  if (!localStorage.getItem(LOCAL_USER_KEY) && localStorage.getItem('butcem_demo_user')) {
+    localStorage.setItem(LOCAL_USER_KEY, localStorage.getItem('butcem_demo_user'));
+  }
+  if (!localStorage.getItem(LOCAL_ACCOUNTS_KEY) && localStorage.getItem('butcem_demo_registered_accounts')) {
+    localStorage.setItem(LOCAL_ACCOUNTS_KEY, localStorage.getItem('butcem_demo_registered_accounts'));
+  }
+  if (!localStorage.getItem(SYNC_KEY) && localStorage.getItem('butcem_september_2026_synced_v1')) {
+    localStorage.setItem(SYNC_KEY, localStorage.getItem('butcem_september_2026_synced_v1'));
+  }
+} catch (e) {
+  console.warn('Veri göçü kontrolü sırasında uyarı:', e);
+}
 
 // Kullanıcının sağladığı Eylül 2026 işlem listesi (36 İşlem)
 export const SEPTEMBER_TRANSACTIONS = [
@@ -469,7 +489,6 @@ class FirebaseService {
   }
 
   _initDemoData() {
-    const SYNC_KEY = 'butcem_september_2026_synced_v1';
     const isSynced = localStorage.getItem(SYNC_KEY);
 
     if (!isSynced) {
@@ -553,6 +572,7 @@ class FirebaseService {
       // Mevcut verileri yeni verilerle birleştir veya güncelle
       data = [...newItems];
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('finansal_takip_data_change', { detail: { type: 'transaction_updated' } }));
       window.dispatchEvent(new CustomEvent('butcem_data_change', { detail: { type: 'transaction_updated' } }));
       return { success: true, count: newItems.length, mode: 'demo' };
     }
@@ -596,7 +616,7 @@ class FirebaseService {
       }
     } else {
       // Demo / Yerel giriş kontrolü
-      const rawAccounts = localStorage.getItem('butcem_demo_registered_accounts');
+      const rawAccounts = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
       const accounts = rawAccounts ? JSON.parse(rawAccounts) : {};
       
       const normalizedEmail = email.toLowerCase().trim();
@@ -630,7 +650,7 @@ class FirebaseService {
       }
     } else {
       // Demo / Yerel kayıt
-      const rawAccounts = localStorage.getItem('butcem_demo_registered_accounts');
+      const rawAccounts = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
       const accounts = rawAccounts ? JSON.parse(rawAccounts) : {};
 
       const normalizedEmail = email.toLowerCase().trim();
@@ -649,7 +669,7 @@ class FirebaseService {
 
       const uid = 'demo-' + btoa(normalizedEmail).substring(0, 8);
       accounts[normalizedEmail] = { email: normalizedEmail, password, uid, createdAt: Date.now() };
-      localStorage.setItem('butcem_demo_registered_accounts', JSON.stringify(accounts));
+      localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
 
       this.currentUser = { email: normalizedEmail, uid };
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(this.currentUser));
@@ -728,8 +748,12 @@ class FirebaseService {
           loadLocal();
         }
       };
+      window.addEventListener('finansal_takip_data_change', storageHandler);
       window.addEventListener('butcem_data_change', storageHandler);
-      this.activeListener = () => window.removeEventListener('butcem_data_change', storageHandler);
+      this.activeListener = () => {
+        window.removeEventListener('finansal_takip_data_change', storageHandler);
+        window.removeEventListener('butcem_data_change', storageHandler);
+      };
       return this.activeListener;
     }
   }
@@ -760,6 +784,7 @@ class FirebaseService {
       const newTx = { id: newId, ...payload };
       data.unshift(newTx);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('finansal_takip_data_change', { detail: { type: 'transaction_updated' } }));
       window.dispatchEvent(new CustomEvent('butcem_data_change', { detail: { type: 'transaction_updated' } }));
       return { success: true, id: newId };
     }
@@ -788,6 +813,7 @@ class FirebaseService {
       let data = raw ? JSON.parse(raw) : [];
       data = data.map(item => item.id === id ? { ...item, ...payload } : item);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('finansal_takip_data_change', { detail: { type: 'transaction_updated' } }));
       window.dispatchEvent(new CustomEvent('butcem_data_change', { detail: { type: 'transaction_updated' } }));
       return { success: true };
     }
@@ -807,6 +833,7 @@ class FirebaseService {
       let data = raw ? JSON.parse(raw) : [];
       data = data.filter(item => item.id !== id);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      window.dispatchEvent(new CustomEvent('finansal_takip_data_change', { detail: { type: 'transaction_updated' } }));
       window.dispatchEvent(new CustomEvent('butcem_data_change', { detail: { type: 'transaction_updated' } }));
       return { success: true };
     }

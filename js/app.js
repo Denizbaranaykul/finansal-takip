@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * BÜTÇEM PRO - ANA UYGULAMA MANTIĞI (app.js)
+ * FİNANSAL TAKİP - ANA UYGULAMA MANTIĞI (app.js)
  * ===================================================================
  * Arayüz yönetimi, filtreleme, periyot navigasyonu, CRUD operasyonları,
  * CSV export ve Firebase entegrasyon kontrolü.
@@ -15,7 +15,7 @@ const CATEGORIES = {
   expense: [
     { name: 'Market', icon: 'fa-basket-shopping', color: '#10b981' },
     { name: 'Dışardan Yemek', icon: 'fa-utensils', color: '#f97316' },
-    { name: 'Yurt Ücreti', icon: 'fa-building-columns', color: '#6366f1' },
+    { name: 'Yurt Ücreti', icon: 'fa-building-columns', color: '#0ea5e9' },
     { name: 'Ulaşım', icon: 'fa-bus', color: '#f59e0b' },
     { name: 'Fatura & Aidat', icon: 'fa-bolt', color: '#0ea5e9' },
     { name: 'Sağlık & Bakım', icon: 'fa-heart-pulse', color: '#ec4899' },
@@ -776,7 +776,7 @@ function openAuthModal(mode = 'login') {
     elements.tabRegister.classList.remove('active');
     elements.authTitle.textContent = 'Hesabınıza Giriş Yapın';
     if (elements.authModalSubtitle) {
-      elements.authModalSubtitle.textContent = 'BütçemPro • Devam etmek için giriş yapın';
+      elements.authModalSubtitle.textContent = 'finansal-takip • Devam etmek için giriş yapın';
     }
     elements.authSubmitBtnText.textContent = 'Giriş Yap';
     if (elements.authSubmitIcon) elements.authSubmitIcon.className = 'fa-solid fa-right-to-bracket';
@@ -785,7 +785,7 @@ function openAuthModal(mode = 'login') {
     elements.tabLogin.classList.remove('active');
     elements.authTitle.textContent = 'Yeni Hesap Oluşturun';
     if (elements.authModalSubtitle) {
-      elements.authModalSubtitle.textContent = 'BütçemPro • Hesabınızı oluşturup hemen başlayın';
+      elements.authModalSubtitle.textContent = 'finansal-takip • Hesabınızı oluşturup hemen başlayın';
     }
     elements.authSubmitBtnText.textContent = 'Kayıt Ol';
     if (elements.authSubmitIcon) elements.authSubmitIcon.className = 'fa-solid fa-user-plus';
@@ -865,7 +865,7 @@ function exportTransactionsCSV() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `butcem_islemler_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `finansal_takip_islemler_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1215,7 +1215,7 @@ function getCategoryMeta(type, categoryName) {
 
   // Geriye dönük uyumluluk veya alternatif yazım desteği
   if (categoryName === 'Market & Gıda') return { name: 'Market', icon: 'fa-basket-shopping', color: '#10b981' };
-  if (categoryName === 'Kira & Konut') return { name: 'Yurt Ücreti', icon: 'fa-building-columns', color: '#6366f1' };
+  if (categoryName === 'Kira & Konut') return { name: 'Yurt Ücreti', icon: 'fa-building-columns', color: '#0ea5e9' };
   if (categoryName === 'Ulaşım & Yakıt') return { name: 'Ulaşım', icon: 'fa-bus', color: '#f59e0b' };
   if (categoryName === 'Dışarıdan Yemek') return { name: 'Dışardan Yemek', icon: 'fa-utensils', color: '#f97316' };
 

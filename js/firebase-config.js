@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * BÜTÇEM PRO - FIREBASE YAPILANDIRMASI (firebase-config.js)
+ * FİNANSAL TAKİP - FIREBASE YAPILANDIRMASI (firebase-config.js)
  * ===================================================================
  * Firebase Konsolu'ndan (https://console.firebase.google.com) aldığınız
  * Web Uygulaması yapılandırma anahtarlarını aşağıdaki alana yapıştırın.

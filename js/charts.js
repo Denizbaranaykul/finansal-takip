@@ -1,6 +1,6 @@
 /**
  * ===================================================================
- * BÜTÇEM PRO - GRAFİK YÖNETİMİ (charts.js)
+ * FİNANSAL TAKİP - GRAFİK YÖNETİMİ (charts.js)
  * ===================================================================
  * Chart.js kütüphanesi ile Harcama Kategori Doughnut Grafiği ve
  * Aylık Gelir & Gider Karşılaştırması Çift Çubuk Grafiği.
@@ -12,7 +12,7 @@ export const CATEGORY_COLORS = {
   'Market': '#10b981',
   'Dışardan Yemek': '#f97316',
   'Dışarıdan Yemek': '#f97316',
-  'Yurt Ücreti': '#6366f1',
+  'Yurt Ücreti': '#0ea5e9',
   'Ulaşım': '#f59e0b',
   'Fatura & Aidat': '#0ea5e9',
   'Sağlık & Bakım': '#ec4899',
@@ -23,7 +23,7 @@ export const CATEGORY_COLORS = {
 
   // Geriye Dönük Uyumluluk (Eski Kayıtlar İçin)
   'Market & Gıda': '#10b981',
-  'Kira & Konut': '#6366f1',
+  'Kira & Konut': '#0ea5e9',
   'Ulaşım & Yakıt': '#f59e0b',
 
   // Gelir Kategorileri
@@ -36,8 +36,8 @@ export const CATEGORY_COLORS = {
 };
 
 const DEFAULT_COLOR_PALETTE = [
-  '#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#0ea5e9',
-  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#64748b'
+  '#10b981', '#14b8a6', '#0ea5e9', '#3b82f6', '#f59e0b',
+  '#f97316', '#f43f5e', '#ec4899', '#84cc16', '#64748b'
 ];
 
 let categoryChartInstance = null;

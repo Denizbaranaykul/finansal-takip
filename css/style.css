@@ -1,6 +1,6 @@
 /* ===================================================================
-   BÜTÇEM PRO - MODERN FINANCIAL TRACKER DESIGN SYSTEM
-   Dark Theme, Glassmorphism, Micro-Animations & Responsive Design
+   FİNANSAL TAKİP - MODERN FINANCIAL TRACKER DESIGN SYSTEM
+   Dark Green Theme, Glassmorphism, Micro-Animations & Responsive Design
    =================================================================== */
 
 :root {
@@ -12,14 +12,14 @@
   --bg-input: rgba(12, 17, 29, 0.7);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(99, 102, 241, 0.5);
+  --border-focus: rgba(16, 185, 129, 0.5);
 
-  /* Primary & Brand */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-glow: rgba(99, 102, 241, 0.25);
-  --secondary: #222c44;
-  --secondary-hover: #2b3754;
+  /* Primary & Brand (Emerald Green Theme) */
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.28);
+  --secondary: #1e293b;
+  --secondary-hover: #334155;
 
   /* Income (Gelir) Colors */
   --income: #10b981;
@@ -38,6 +38,9 @@
   /* Balance / Accent */
   --accent-amber: #f59e0b;
   --accent-blue: #38bdf8;
+  --accent-green: #34d399;
+  --accent-mint: #6ee7b7;
+  --accent-teal: #14b8a6;
   --accent-purple: #a855f7;
 
   /* Text Colors */
@@ -95,7 +98,7 @@ body {
   left: 10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%);
 }
 
 .bg-glow-2 {
@@ -156,13 +159,13 @@ body {
   width: 42px;
   height: 42px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 1.2rem;
-  box-shadow: 0 6px 16px var(--primary-glow);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
 .brand-title {
@@ -175,7 +178,7 @@ body {
 }
 
 .brand-accent {
-  background: linear-gradient(135deg, #a855f7 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -288,7 +291,7 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,8 +329,8 @@ body {
 
 /* ==================== CONFIG BANNER ==================== */
 .config-banner {
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(56, 189, 248, 0.2) 100%);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.18) 0%, rgba(20, 184, 166, 0.15) 100%);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3);
   padding: 0.6rem 0;
   animation: slideDown 0.3s ease;
 }
@@ -349,12 +352,12 @@ body {
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   font-family: 'JetBrains Mono', monospace;
-  color: #a5b4fc;
+  color: #6ee7b7;
 }
 
 .banner-icon {
   font-size: 1.1rem;
-  color: #818cf8;
+  color: #34d399;
 }
 
 .banner-close {
@@ -371,8 +374,8 @@ body {
 }
 
 .quick-sync-banner {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(16, 185, 129, 0.2));
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(20, 184, 166, 0.15));
+  border: 1px solid rgba(16, 185, 129, 0.4);
   margin-bottom: 1.5rem;
   border-radius: var(--radius-md);
   padding: 0.85rem 1.25rem;
@@ -517,7 +520,7 @@ body {
 
 .stat-income::before { background: linear-gradient(90deg, var(--income), #34d399); }
 .stat-expense::before { background: linear-gradient(90deg, var(--expense), #fb7185); }
-.stat-balance::before { background: linear-gradient(90deg, var(--primary), #a855f7); }
+.stat-balance::before { background: linear-gradient(90deg, #10b981, #34d399); }
 .stat-highlight::before { background: linear-gradient(90deg, var(--accent-amber), #fbbf24); }
 
 .stat-header {
@@ -556,8 +559,8 @@ body {
 }
 
 .balance-icon {
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--primary);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
 }
 
 .highlight-icon {
@@ -604,8 +607,8 @@ body {
 }
 
 .balance-badge {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
 }
 
 .highlight-badge {
@@ -655,7 +658,7 @@ body {
 .chart-title-icon {
   font-size: 1.2rem;
   color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(16, 185, 129, 0.12);
   padding: 0.5rem;
   border-radius: var(--radius-md);
 }
@@ -1004,10 +1007,10 @@ body {
 }
 
 .category-chip.active {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(16, 185, 129, 0.2);
   border-color: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.35);
   font-weight: 700;
 }
 
@@ -1038,8 +1041,8 @@ body {
   flex-wrap: wrap;
   margin-top: 0.75rem;
   padding: 0.65rem 1.1rem;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(20, 184, 166, 0.08) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   border-radius: var(--radius-md);
   animation: filterBannerSlide 0.25s ease-out;
 }
@@ -1078,10 +1081,10 @@ body {
 .indicator-badge strong {
   color: #fff;
   font-weight: 700;
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(16, 185, 129, 0.3);
   padding: 0.15rem 0.65rem;
   border-radius: var(--radius-full);
-  border: 1px solid rgba(99, 102, 241, 0.5);
+  border: 1px solid rgba(16, 185, 129, 0.5);
   letter-spacing: 0.02em;
 }
 
@@ -1270,7 +1273,7 @@ body {
 .empty-icon {
   width: 64px;
   height: 64px;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(16, 185, 129, 0.12);
   color: var(--primary);
   border-radius: 50%;
   display: flex;
@@ -1325,13 +1328,13 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #059669 100%);
   color: #fff;
   box-shadow: 0 4px 14px var(--primary-glow);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
 }
 
 .btn-success {
@@ -1407,8 +1410,8 @@ body {
 }
 
 .tag {
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
   font-size: 0.75rem;
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-full);
@@ -1480,7 +1483,7 @@ body {
 }
 
 .modal-icon-badge.auth-badge {
-  background: linear-gradient(135deg, var(--primary) 0%, #38bdf8 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #14b8a6 100%);
 }
 
 .modal-icon-badge.guide-badge {
@@ -2457,8 +2460,8 @@ body.auth-locked .nav-actions {
 }
 
 #authModal .modal-card {
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  box-shadow: 0 0 60px rgba(99, 102, 241, 0.25), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 60px rgba(16, 185, 129, 0.25), 0 25px 50px -12px rgba(0, 0, 0, 0.9);
   animation: authModalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
