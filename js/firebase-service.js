@@ -57,31 +57,25 @@ export const ADMIN_EMAILS = [
 export function isUserAdmin(user) {
   if (!user) return false;
 
-  // 1. Rol veya yetki bayrağı kontrolü
-  const role = String(user.role || '').toLowerCase().trim();
-  if (role === 'admin' || user.isAdmin === true || user.admin === true) return true;
-
-  // 2. E-posta ve kullanıcı adı kontrolü
+  // 1. Kesin Admin E-posta Kontrolü
   const email = (user.email || '').toLowerCase().trim();
-  if (!email) return false;
-
-  // daykul75, dayku, denizbaranaykul hesapları
   if (
     email === 'daykul75' ||
-    email.startsWith('daykul75') ||
-    email.includes('daykul75') ||
-    email.includes('dayku') ||
-    email.includes('denizbaranaykul')
+    email === 'daykul75@gmail.com' ||
+    email.startsWith('daykul75@') ||
+    email.startsWith('daykul75+') ||
+    ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase().trim() === email)
   ) {
     return true;
   }
 
-  // 3. Yerel depolama override kontrolü
-  try {
-    if (localStorage.getItem('finansal_takip_user_role') === 'admin') return true;
-  } catch (e) {}
+  // 2. Rol veya yetki bayrağı kontrolü (yalnızca doğrulanmış 'admin' rolü)
+  const role = String(user.role || '').toLowerCase().trim();
+  if (role === 'admin' || user.isAdmin === true || user.admin === true) {
+    return true;
+  }
 
-  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase().trim() === email);
+  return false;
 }
 
 // Görev Konuları (Kullanıcının talep ettiği güncel kategoriler)
@@ -736,46 +730,45 @@ class FirebaseService {
    * Kullanıcı objesine Firestore ve yerel depodan admin rolünü bağlar
    */
   async _enrichUserWithRole(user) {
-    if (!user) return user;
+    if (!user) return null;
 
-    // 1. E-posta adresi ve bilinen admin kullanıcıları
+    // Herhangi bir eski/genel role çerezini veya bayrağını temizle
+    try {
+      localStorage.removeItem('finansal_takip_user_role');
+    } catch (e) {}
+
     const email = (user.email || '').toLowerCase().trim();
-    if (
+
+    // 1. Kesin Admin E-posta Kontrolü
+    const isAdminEmail = 
       email === 'daykul75' ||
-      email.startsWith('daykul75') ||
-      email.includes('daykul75') ||
-      email.includes('dayku') ||
-      email.includes('denizbaranaykul') ||
-      ADMIN_EMAILS.some(ae => ae.toLowerCase().trim() === email)
-    ) {
+      email === 'daykul75@gmail.com' ||
+      email.startsWith('daykul75@') ||
+      email.startsWith('daykul75+') ||
+      ADMIN_EMAILS.some(ae => ae.toLowerCase().trim() === email);
+
+    if (isAdminEmail) {
       user.role = 'admin';
       user.isAdmin = true;
+      user.admin = true;
       return user;
     }
 
-    // 2. LocalStorage'da admin rolü varsa
-    try {
-      const localRole = localStorage.getItem('finansal_takip_user_role');
-      if (localRole === 'admin') {
-        user.role = 'admin';
-        user.isAdmin = true;
-        return user;
-      }
-    } catch (e) {}
-
-    // 3. Firestore'dan doküman kontrolü
+    // 2. Firebase/Firestore Modunda Kullanıcıya Özel Doküman Kontrolü
     if (this.mode === 'firebase' && db && firebaseModules.getDoc && firebaseModules.doc) {
-      const docPaths = [
-        ['users', user.uid],
-        ['users', email],
-        ['users', 'daykul75'],
-        ['admins', user.uid],
-        ['admins', email],
-        ['roles', user.uid]
-      ];
+      // SADECE ve SADECE bu kullanıcıya ait doküman kimlikleri sorgulanır!
+      // Asla genel veya başkasına ait doküman kimlikleri (örn: 'daykul75') eklenmez!
+      const userSpecificDocPaths = [];
+      if (user.uid) {
+        userSpecificDocPaths.push(['users', user.uid]);
+        userSpecificDocPaths.push(['admins', user.uid]);
+      }
+      if (email) {
+        userSpecificDocPaths.push(['users', email]);
+        userSpecificDocPaths.push(['admins', email]);
+      }
 
-      for (const [col, docId] of docPaths) {
-        if (!docId) continue;
+      for (const [col, docId] of userSpecificDocPaths) {
         try {
           const docRef = firebaseModules.doc(db, col, docId);
           const snap = await firebaseModules.getDoc(docRef);
@@ -786,40 +779,70 @@ class FirebaseService {
               if (r === 'admin' || data.isAdmin === true || data.admin === true) {
                 user.role = 'admin';
                 user.isAdmin = true;
+                user.admin = true;
                 return user;
               }
             }
           }
         } catch (e) {
-          // Sonraki dokümanı dene
+          // Bir sonraki kullanıcıya özel dokümanı kontrol et
         }
       }
 
-      // 4. Koleksiyon sorgusu (Auto-ID ile eklenmiş dokümanlar için)
-      if (firebaseModules.getDocs && firebaseModules.collection) {
+      // 3. Firestore 'users' koleksiyonunda sadece bu kullanıcının uid veya email'ine göre sorgu
+      if (firebaseModules.getDocs && firebaseModules.collection && (email || user.uid)) {
         try {
           const qUsers = firebaseModules.collection(db, 'users');
           const snaps = await firebaseModules.getDocs(qUsers);
+          let foundAdminRole = false;
           snaps.forEach(docSnap => {
             const d = docSnap.data();
             if (d) {
               const dEmail = (d.email || '').toLowerCase().trim();
-              const dRole = String(d.role || '').toLowerCase().trim();
-              if (dEmail === email || d.uid === user.uid || (!dEmail && dRole === 'admin')) {
+              const dUid = d.uid || docSnap.id;
+              // YALNIZCA bu kullanıcı ile eşleşen dokümanlar!
+              const matchesThisUser = (email && dEmail === email) || (user.uid && dUid === user.uid);
+              if (matchesThisUser) {
+                const dRole = String(d.role || '').toLowerCase().trim();
                 if (dRole === 'admin' || d.isAdmin === true || d.admin === true) {
-                  user.role = 'admin';
-                  user.isAdmin = true;
+                  foundAdminRole = true;
                 }
               }
             }
           });
-          if (user.role === 'admin') return user;
+          if (foundAdminRole) {
+            user.role = 'admin';
+            user.isAdmin = true;
+            user.admin = true;
+            return user;
+          }
         } catch (e) {
           // Sessizce geç
         }
       }
     }
 
+    // 4. Demo Modu Kontrolü
+    if (this.mode !== 'firebase') {
+      try {
+        const rawAccounts = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
+        const accounts = rawAccounts ? JSON.parse(rawAccounts) : {};
+        if (email && accounts[email]) {
+          const accRole = String(accounts[email].role || '').toLowerCase().trim();
+          if (accRole === 'admin' || accounts[email].isAdmin === true) {
+            user.role = 'admin';
+            user.isAdmin = true;
+            user.admin = true;
+            return user;
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Yukarıdaki kontrollerden admin alamayan her hesap KESİNLİKLE standart kullanıcıdır
+    user.role = 'user';
+    user.isAdmin = false;
+    user.admin = false;
     return user;
   }
 
@@ -891,6 +914,10 @@ class FirebaseService {
       }
       
       this.currentUser = { email: normalizedEmail, uid: accounts[normalizedEmail].uid };
+      if (accounts[normalizedEmail].role) {
+        this.currentUser.role = accounts[normalizedEmail].role;
+      }
+      this.currentUser = await this._enrichUserWithRole(this.currentUser);
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(this.currentUser));
       return { success: true, user: this.currentUser };
     }
@@ -900,7 +927,7 @@ class FirebaseService {
     if (this.mode === 'firebase') {
       try {
         const userCredential = await firebaseModules.createUserWithEmailAndPassword(auth, email, password);
-        this.currentUser = userCredential.user;
+        this.currentUser = await this._enrichUserWithRole(userCredential.user);
         return { success: true, user: this.currentUser };
       } catch (error) {
         return { success: false, error: this._translateAuthError(error.code) };
@@ -925,10 +952,11 @@ class FirebaseService {
       }
 
       const uid = 'demo-' + btoa(normalizedEmail).substring(0, 8);
-      accounts[normalizedEmail] = { email: normalizedEmail, password, uid, createdAt: Date.now() };
+      accounts[normalizedEmail] = { email: normalizedEmail, password, uid, role: 'user', createdAt: Date.now() };
       localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts));
 
-      this.currentUser = { email: normalizedEmail, uid };
+      this.currentUser = { email: normalizedEmail, uid, role: 'user', isAdmin: false };
+      this.currentUser = await this._enrichUserWithRole(this.currentUser);
       localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(this.currentUser));
       return { success: true, user: this.currentUser };
     }
@@ -942,6 +970,9 @@ class FirebaseService {
       this.currentUser = null;
       localStorage.removeItem(LOCAL_USER_KEY);
     }
+    try {
+      localStorage.removeItem('finansal_takip_user_role');
+    } catch (e) {}
     return true;
   }
 
@@ -1107,6 +1138,12 @@ class FirebaseService {
       this.activeAdminTasksListener = null;
     }
 
+    // Yetkisiz kullanıcılar görev verilerini asla çekemez
+    if (!isUserAdmin(this.currentUser)) {
+      callback([]);
+      return () => {};
+    }
+
     const OLD_TOPICS_MAPPING = {
       'Fatura & Ödemeler': 'Ödemeler',
       'Bütçe & Raporlama': 'Çalışmalar',
@@ -1203,6 +1240,10 @@ class FirebaseService {
    * Yeni admin görevi ekler
    */
   async addAdminTask(taskData) {
+    if (!isUserAdmin(this.currentUser)) {
+      throw new Error('Yetkisiz işlem: Görev ekleme yetkiniz bulunmamaktadır.');
+    }
+
     const payload = {
       title: (taskData.title || '').trim(),
       date: taskData.date || new Date().toISOString().slice(0, 10),
@@ -1246,6 +1287,10 @@ class FirebaseService {
    * Var olan görevi günceller
    */
   async updateAdminTask(id, taskData) {
+    if (!isUserAdmin(this.currentUser)) {
+      throw new Error('Yetkisiz işlem: Görev güncelleme yetkiniz bulunmamaktadır.');
+    }
+
     const payload = {
       title: (taskData.title || '').trim(),
       date: taskData.date,
@@ -1280,6 +1325,10 @@ class FirebaseService {
    * Görevin tamamlandı/bekliyor durumunu değiştirir
    */
   async toggleAdminTaskStatus(id, newStatus) {
+    if (!isUserAdmin(this.currentUser)) {
+      throw new Error('Yetkisiz işlem: Görev durumu değiştirme yetkiniz bulunmamaktadır.');
+    }
+
     const isCompleted = newStatus === 'completed';
     const payload = {
       status: isCompleted ? 'completed' : 'pending',
@@ -1307,6 +1356,10 @@ class FirebaseService {
    * Görevi siler
    */
   async deleteAdminTask(id) {
+    if (!isUserAdmin(this.currentUser)) {
+      throw new Error('Yetkisiz işlem: Görev silme yetkiniz bulunmamaktadır.');
+    }
+
     if (this.mode === 'firebase' && this.currentUser) {
       try {
         const docRef = firebaseModules.doc(db, 'users', this.currentUser.uid, 'admin_tasks', id);

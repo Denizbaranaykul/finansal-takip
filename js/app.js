@@ -1156,6 +1156,9 @@ function populateTaskTopicOptions() {
 function openAdminTasksModal() {
   // Admin olmadan biri girmeye çalışırsa (butona basarsa) hiçbir veri göremez ve yetkisi dışında olduğu yazar!
   if (!isUserAdmin(state.currentUser)) {
+    if (elements.adminTasksModal) {
+      elements.adminTasksModal.classList.add('hidden');
+    }
     openAdminAccessDeniedModal();
     return;
   }
@@ -1220,6 +1223,17 @@ function switchAdminTab(tabName) {
 }
 
 function updateAdminTasksUI() {
+  if (!isUserAdmin(state.currentUser)) {
+    if (elements.adminNavBadgeCount) {
+      elements.adminNavBadgeCount.innerHTML = '<i class="fa-solid fa-lock" style="font-size: 0.65rem;"></i>';
+    }
+    if (elements.adminTasksModal && !elements.adminTasksModal.classList.contains('hidden')) {
+      elements.adminTasksModal.classList.add('hidden');
+      openAdminAccessDeniedModal();
+    }
+    return;
+  }
+
   // Bugünün bekleyen görev sayısını hesapla
   const todayStr = state.selectedTaskDate || new Date().toISOString().slice(0, 10);
   const todayTasks = state.adminTasks.filter(t => t.date === todayStr);
@@ -1244,6 +1258,11 @@ function updateAdminTasksUI() {
 
 // ---------------- GÜNLÜK GÖRÜNÜM ----------------
 function renderAdminDailyView() {
+  if (!isUserAdmin(state.currentUser)) {
+    if (elements.adminDailyTasksList) elements.adminDailyTasksList.innerHTML = '';
+    return;
+  }
+
   const currentDate = state.selectedTaskDate || '2026-09-27';
 
   if (elements.adminDailyDateInput) {
@@ -1350,6 +1369,11 @@ function renderAdminDailyView() {
 
 // ---------------- AYLIK GÖRÜNÜM & TABLO ----------------
 function renderAdminMonthlyView() {
+  if (!isUserAdmin(state.currentUser)) {
+    if (elements.adminTasksTableBody) elements.adminTasksTableBody.innerHTML = '';
+    return;
+  }
+
   const periodMonthStr = `${state.selectedYear}-${String(state.selectedMonth + 1).padStart(2, '0')}`;
   const monthName = MONTH_NAMES_TR[state.selectedMonth];
 
