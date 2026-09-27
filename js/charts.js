@@ -273,3 +273,247 @@ export function updateMonthlyTrendChart(allTransactions) {
     });
   }
 }
+
+// ===================================================================
+// ADMIN AYLIK GÖREV GRAFİKLERİ
+// ===================================================================
+
+let adminTopicChartInstance = null;
+let adminStatusBarChartInstance = null;
+
+export const TASK_TOPIC_COLORS = {
+  'Banyo': '#06b6d4',
+  'Yurt Yemeği': '#f97316',
+  'Kardiyo': '#ef4444',
+  'Derse Gitmek': '#8b5cf6',
+  'Ödemeler': '#0ea5e9',
+  'Çalışmalar': '#10b981',
+  'Alışveriş': '#ec4899',
+  'Özel': '#f59e0b',
+  'Diğer': '#64748b'
+};
+
+/**
+ * Aylık görev sekmesindeki her iki grafiği günceller
+ */
+export function updateAdminTaskCharts(tasks) {
+  updateAdminTopicDistributionChart(tasks);
+  updateAdminTaskStatusBarChart(tasks);
+}
+
+/**
+ * Konulara göre görev dağılımı grafiği (Doughnut)
+ */
+export function updateAdminTopicDistributionChart(tasks) {
+  const canvas = document.getElementById('adminTasksTopicChart');
+  const emptyState = document.getElementById('adminTopicChartEmpty');
+  const tag = document.getElementById('adminTopicChartTag');
+  if (!canvas) return;
+
+  if (!tasks || tasks.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (tag) tag.textContent = '0 Konu';
+    if (adminTopicChartInstance) {
+      adminTopicChartInstance.destroy();
+      adminTopicChartInstance = null;
+    }
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+
+  // Konu bazlı sayıları hesapla
+  const topicCounts = {};
+  tasks.forEach(t => {
+    const topic = t.topic || 'Diğer';
+    topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+  });
+
+  const labels = Object.keys(topicCounts);
+  const data = Object.values(topicCounts);
+  const bgColors = labels.map((l, idx) => TASK_TOPIC_COLORS[l] || DEFAULT_COLOR_PALETTE[idx % DEFAULT_COLOR_PALETTE.length]);
+  const total = tasks.length;
+
+  if (tag) {
+    tag.textContent = `${labels.length} Konu • ${total} Görev`;
+  }
+
+  if (adminTopicChartInstance) {
+    adminTopicChartInstance.data.labels = labels;
+    adminTopicChartInstance.data.datasets[0].data = data;
+    adminTopicChartInstance.data.datasets[0].backgroundColor = bgColors;
+    adminTopicChartInstance.update();
+  } else {
+    adminTopicChartInstance = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: bgColors,
+          borderWidth: 2,
+          borderColor: '#0f172a',
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '66%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#94a3b8',
+              font: {
+                family: "'Plus Jakarta Sans', sans-serif",
+                size: 11
+              },
+              boxWidth: 10,
+              boxHeight: 10,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 10
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1e293b',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                const val = context.parsed;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(0) : 0;
+                return ` ${context.label}: ${val} Görev (%${pct})`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+/**
+ * Konu bazında tamamlanma durumu grafiği (Stacked Bar)
+ */
+export function updateAdminTaskStatusBarChart(tasks) {
+  const canvas = document.getElementById('adminTasksStatusBarChart');
+  const emptyState = document.getElementById('adminStatusBarChartEmpty');
+  if (!canvas) return;
+
+  if (!tasks || tasks.length === 0) {
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (adminStatusBarChartInstance) {
+      adminStatusBarChartInstance.destroy();
+      adminStatusBarChartInstance = null;
+    }
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+
+  // Konuları belirle
+  const topicsSet = new Set(tasks.map(t => t.topic || 'Diğer'));
+  const labels = Array.from(topicsSet);
+
+  const completedData = [];
+  const pendingData = [];
+
+  labels.forEach(topic => {
+    const topicTasks = tasks.filter(t => (t.topic || 'Diğer') === topic);
+    const completed = topicTasks.filter(t => t.status === 'completed').length;
+    const pending = topicTasks.filter(t => t.status !== 'completed').length;
+    completedData.push(completed);
+    pendingData.push(pending);
+  });
+
+  if (adminStatusBarChartInstance) {
+    adminStatusBarChartInstance.data.labels = labels;
+    adminStatusBarChartInstance.data.datasets[0].data = completedData;
+    adminStatusBarChartInstance.data.datasets[1].data = pendingData;
+    adminStatusBarChartInstance.update();
+  } else {
+    adminStatusBarChartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Tamamlandı',
+            data: completedData,
+            backgroundColor: '#10b981',
+            borderRadius: 4,
+            barPercentage: 0.65
+          },
+          {
+            label: 'Bekliyor',
+            data: pendingData,
+            backgroundColor: '#f59e0b',
+            borderRadius: 4,
+            barPercentage: 0.65
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: {
+              color: '#94a3b8',
+              font: {
+                family: "'Plus Jakarta Sans', sans-serif",
+                size: 11
+              }
+            }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: {
+              color: '#94a3b8',
+              stepSize: 1,
+              precision: 0,
+              font: {
+                family: "'Plus Jakarta Sans', sans-serif",
+                size: 11
+              }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1e293b',
+            titleColor: '#f8fafc',
+            bodyColor: '#cbd5e1',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                return ` ${context.dataset.label}: ${context.parsed.y} Görev`;
+              },
+              footer: function(items) {
+                const totalTopic = items.reduce((acc, it) => acc + it.parsed.y, 0);
+                return `Toplam: ${totalTopic} Görev`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+

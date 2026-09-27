@@ -62,6 +62,15 @@
           <span class="status-text" id="firebaseStatusText">Bağlanıyor...</span>
         </button>
 
+        <!-- Admin Görev Merkezi Butonu (Sadece Admin Kullanıcılara Özel) -->
+        <button class="btn btn-admin-nav hidden" id="adminCenterBtn" title="Yönetici Görev & Takip Merkezi (Sadece Admin)">
+          <div class="admin-nav-icon-wrap">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span class="admin-nav-label">Görev Merkezi</span>
+          <span class="admin-badge-count" id="adminNavBadgeCount" title="Bugünün Bekleyen Görevleri">0</span>
+        </button>
+
         <!-- Kullanıcı Giriş Durumu -->
         <div class="user-menu" id="userMenu">
           <button class="btn btn-secondary btn-sm" id="navLoginBtn">
@@ -651,6 +660,432 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="closeImportModalFooterBtn">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN GÖREV MERKEZİ (TAM EKRAN MODAL) ==================== -->
+  <div class="modal-backdrop admin-modal-backdrop hidden" id="adminTasksModal">
+    <div class="admin-modal-window">
+      <!-- Üst Başlık & Kontroller -->
+      <header class="admin-modal-header">
+        <div class="admin-header-left">
+          <div class="admin-shield-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <div class="admin-title-row">
+              <h2 class="admin-modal-title">Yönetici Görev & Takip Merkezi</h2>
+              <span class="badge-role-admin"><i class="fa-solid fa-lock"></i> Admin Yetkisi</span>
+            </div>
+            <p class="admin-modal-subtitle">Günlük yapılacaklar listesi ve aylık görev tamamlama raporu</p>
+          </div>
+        </div>
+
+        <!-- Görünüm Sekmeleri (Günlük / Aylık) -->
+        <div class="admin-view-tabs">
+          <button class="admin-tab-btn active" id="adminTabDailyBtn" data-tab="daily">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span>Günlük Yapılacaklar</span>
+            <span class="tab-badge" id="dailyPendingCountBadge">0</span>
+          </button>
+          <button class="admin-tab-btn" id="adminTabMonthlyBtn" data-tab="monthly">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span>Aylık Görev Tablosu</span>
+          </button>
+        </div>
+
+        <div class="admin-header-right">
+          <button class="btn btn-primary" id="openAddTaskBtn">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Yeni Görev Ekle</span>
+          </button>
+          <button class="icon-btn admin-close-btn" id="closeAdminModalBtn" title="Kapat (Esc)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Modal Gövdesi -->
+      <div class="admin-modal-body">
+        
+        <!-- SEKME 1: GÜNLÜK YAPILACAKLAR LİSTESİ -->
+        <section class="admin-tab-content active" id="adminDailyView">
+          <!-- Gün Seçici & İlerleme Özeti Çubuğu -->
+          <div class="admin-daily-control-card">
+            <div class="daily-date-picker-group">
+              <button class="icon-btn" id="adminPrevDayBtn" title="Önceki Gün">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <div class="daily-current-date">
+                <i class="fa-regular fa-calendar-check text-primary"></i>
+                <input type="date" id="adminDailyDateInput" class="admin-date-input">
+                <span class="daily-date-label" id="adminDailyDateLabel">27 Eylül 2026, Pazar</span>
+              </div>
+              <button class="icon-btn" id="adminNextDayBtn" title="Sonraki Gün">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="adminTodayBtn">Bugün</button>
+            </div>
+
+            <!-- Günlük İlerleme Göstergesi -->
+            <div class="daily-progress-box">
+              <div class="daily-progress-header">
+                <span class="daily-progress-title">Günün Görev İlerlemesi</span>
+                <span class="daily-progress-stats" id="dailyProgressText">0 / 0 Tamamlandı (%0)</span>
+              </div>
+              <div class="daily-progress-track">
+                <div class="daily-progress-bar" id="dailyProgressBar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Günlük Görevler Listesi Konteyneri -->
+          <div class="admin-tasks-container">
+            <div class="admin-tasks-list" id="adminDailyTasksList">
+              <!-- Dinamik JavaScript ile doldurulacak -->
+            </div>
+
+            <!-- Günlük Boş Durum -->
+            <div class="admin-empty-state hidden" id="adminDailyEmptyState">
+              <div class="admin-empty-icon">
+                <i class="fa-solid fa-clipboard-check"></i>
+              </div>
+              <h4 class="admin-empty-title">Bu Gün İçin Görev Bulunmuyor</h4>
+              <p class="admin-empty-desc">Seçili tarihte henüz planlanmış bir görev yok. Yeni bir yapılacak görevi ekleyerek günü organize edin!</p>
+              <button class="btn btn-primary btn-sm" id="emptyAddDailyTaskBtn">
+                <i class="fa-solid fa-plus"></i> Bu Güne Görev Ekle
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SEKME 2: AYLIK GÖREV TABLOSU & RAPORU -->
+        <section class="admin-tab-content hidden" id="adminMonthlyView">
+          <!-- Aylık İstatistik Özet Kartları -->
+          <div class="admin-kpi-grid">
+            <div class="admin-kpi-card">
+              <div class="kpi-icon-wrap kpi-blue">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+              <div class="kpi-details">
+                <span class="kpi-label">Toplam Aylık Görev</span>
+                <span class="kpi-value" id="monthlyTotalTasksCount">0</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon-wrap kpi-green">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="kpi-details">
+                <span class="kpi-label">Tamamlanan Görevler</span>
+                <span class="kpi-value text-success" id="monthlyCompletedTasksCount">0</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon-wrap kpi-amber">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div class="kpi-details">
+                <span class="kpi-label">Bekleyen Görevler</span>
+                <span class="kpi-value text-amber" id="monthlyPendingTasksCount">0</span>
+              </div>
+            </div>
+            <div class="admin-kpi-card">
+              <div class="kpi-icon-wrap kpi-purple">
+                <i class="fa-solid fa-percent"></i>
+              </div>
+              <div class="kpi-details">
+                <span class="kpi-label">Aylık Başarı Oranı</span>
+                <span class="kpi-value text-purple" id="monthlySuccessRate">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aylık Görev Grafikleri Grid'i -->
+          <div class="admin-charts-grid">
+            <!-- Grafik 1: Konulara Göre Görev Dağılımı (Doughnut) -->
+            <div class="admin-chart-card">
+              <div class="admin-chart-header">
+                <div class="chart-header-title">
+                  <div class="chart-icon-box" style="background: rgba(14, 165, 233, 0.15); color: #0ea5e9;">
+                    <i class="fa-solid fa-chart-pie"></i>
+                  </div>
+                  <div>
+                    <h4 class="admin-chart-title">Konulara Göre Dağılım</h4>
+                    <span class="admin-chart-subtitle">Bu aydaki görevlerin kategorisel dağılımı</span>
+                  </div>
+                </div>
+                <span class="admin-chart-tag" id="adminTopicChartTag">0 Konu</span>
+              </div>
+              <div class="admin-chart-body">
+                <div class="admin-chart-canvas-wrap">
+                  <canvas id="adminTasksTopicChart"></canvas>
+                </div>
+                <div class="admin-chart-empty hidden" id="adminTopicChartEmpty">
+                  <i class="fa-solid fa-chart-pie"></i>
+                  <span>Bu ay için grafik verisi yok</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grafik 2: Konu Bazında Tamamlanma Durumu (Bar) -->
+            <div class="admin-chart-card">
+              <div class="admin-chart-header">
+                <div class="chart-header-title">
+                  <div class="chart-icon-box" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="fa-solid fa-chart-column"></i>
+                  </div>
+                  <div>
+                    <h4 class="admin-chart-title">Konu Bazında Tamamlanma Durumu</h4>
+                    <span class="admin-chart-subtitle">Tamamlanan ve bekleyen görevlerin karşılaştırması</span>
+                  </div>
+                </div>
+                <div class="admin-chart-legend-custom">
+                  <span class="legend-item"><span class="legend-dot" style="background: #10b981;"></span> Tamamlandı</span>
+                  <span class="legend-item"><span class="legend-dot" style="background: #f59e0b;"></span> Bekliyor</span>
+                </div>
+              </div>
+              <div class="admin-chart-body">
+                <div class="admin-chart-canvas-wrap">
+                  <canvas id="adminTasksStatusBarChart"></canvas>
+                </div>
+                <div class="admin-chart-empty hidden" id="adminStatusBarChartEmpty">
+                  <i class="fa-solid fa-chart-column"></i>
+                  <span>Bu ay için grafik verisi yok</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aylık Tablo Filtre ve Arama Araç Çubuğu -->
+          <div class="admin-table-toolbar">
+            <div class="admin-search-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="adminTaskSearchInput" placeholder="Görev veya konu ara...">
+              <button class="clear-search hidden" id="clearAdminSearchBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Konu Filtresi -->
+            <div class="admin-filter-group">
+              <label for="adminTopicFilterSelect"><i class="fa-solid fa-filter"></i> Konu:</label>
+              <select id="adminTopicFilterSelect" class="form-select select-sm">
+                <option value="all">Tüm Konular</option>
+              </select>
+            </div>
+
+            <!-- Durum Filtresi (Tümü / Bekleyen / Tamamlanan) -->
+            <div class="admin-status-tabs" id="adminStatusFilterTabs">
+              <button class="status-tab-btn active" data-status="all">Tümü</button>
+              <button class="status-tab-btn" data-status="pending">Bekleyenler</button>
+              <button class="status-tab-btn" data-status="completed">Tamamlananlar</button>
+            </div>
+
+            <div class="admin-month-badge" id="adminMonthlyPeriodBadge">
+              <i class="fa-regular fa-calendar"></i>
+              <span id="adminSelectedMonthLabel">Eylül 2026</span>
+            </div>
+          </div>
+
+          <!-- Aylık Görev Tablosu -->
+          <div class="admin-table-container">
+            <div class="table-responsive">
+              <table class="admin-tasks-table" id="adminTasksTable">
+                <thead>
+                  <tr>
+                    <th style="width: 125px;">Tarih</th>
+                    <th style="width: 85px;">Saat</th>
+                    <th style="width: 165px;">Görev Konusu</th>
+                    <th>Görev Tanımı & Detaylar</th>
+                    <th style="width: 135px; text-align: center;">Durum</th>
+                    <th style="width: 155px;">Yapılış Bilgisi</th>
+                    <th style="width: 130px; text-align: center;">İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTasksTableBody">
+                  <!-- Dinamik JavaScript ile doldurulacak -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Tablo Boş Durumu -->
+            <div class="admin-empty-state hidden" id="adminTableEmptyState">
+              <div class="admin-empty-icon">
+                <i class="fa-solid fa-table-list"></i>
+              </div>
+              <h4 class="admin-empty-title">Eşleşen Görev Bulunamadı</h4>
+              <p class="admin-empty-desc">Filtre kriterlerinize veya bu aya ait kayıtlı görev bulunamadı.</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Görev Ekleme / Düzenleme Modalı -->
+  <div class="modal-backdrop hidden" id="adminTaskFormModal" style="z-index: 2200;">
+    <div class="modal-card admin-form-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge" id="adminTaskModalIconBadge" style="background: linear-gradient(135deg, #6366f1, #10b981);">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <div>
+            <h3 class="modal-title" id="adminTaskModalTitle">Yeni Görev Planla</h3>
+            <span class="modal-subtitle">Görev konusu, tarihi ve saatini belirleyin</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="closeAdminTaskFormBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="adminTaskForm">
+        <input type="hidden" id="adminTaskEditId" value="">
+
+        <!-- Görev Başlığı -->
+        <div class="form-group">
+          <label class="form-label" for="taskTitleInput">Görev Tanımı / Başlık <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-pen-fancy input-icon"></i>
+            <input type="text" id="taskTitleInput" placeholder="Örn: BES fon dağılımını gözden geçir" required autocomplete="off">
+          </div>
+        </div>
+
+        <!-- Tarih & Saat -->
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label class="form-label" for="taskDateInput">Görev Tarihi <span class="required">*</span></label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-calendar input-icon"></i>
+              <input type="date" id="taskDateInput" required>
+            </div>
+          </div>
+
+          <div class="form-group flex-1">
+            <label class="form-label" for="taskTimeInput">Görev Saati <span class="required">*</span></label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-clock input-icon"></i>
+              <input type="time" id="taskTimeInput" required value="10:00">
+            </div>
+          </div>
+        </div>
+
+        <!-- Görev Konusu (Kategori) -->
+        <div class="form-group">
+          <label class="form-label" for="taskTopicSelect">Görev Konusu <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-tag input-icon"></i>
+            <select id="taskTopicSelect" required class="form-select">
+              <!-- Dinamik olarak TASK_TOPICS listesinden dolacak -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Özel Konu Girişi (Eğer Özel / Diğer seçilirse görünür) -->
+        <div class="form-group hidden" id="customTopicGroup">
+          <label class="form-label" for="customTopicInput">Özel Konu Başlığı <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-pen-nib input-icon"></i>
+            <input type="text" id="customTopicInput" placeholder="Kendi konunuzu yazın (Örn: Vergi Dairesi Görüşmesi)">
+          </div>
+        </div>
+
+        <!-- Açıklama / Detay Notu -->
+        <div class="form-group">
+          <label class="form-label" for="taskDescriptionInput">Açıklama & Notlar (Opsiyonel)</label>
+          <textarea id="taskDescriptionInput" rows="3" placeholder="Görevle ilgili yapılması gereken adımları veya notları yazın..."></textarea>
+        </div>
+
+        <!-- Görev Durumu (Düzenlerken veya eklerken) -->
+        <div class="form-group">
+          <label class="form-label">Görev Durumu</label>
+          <div class="task-status-radio-group">
+            <label class="status-radio-pill">
+              <input type="radio" name="taskStatusRadio" value="pending" id="taskStatusPending" checked>
+              <span class="status-pill-inner pending-pill"><i class="fa-regular fa-clock"></i> Bekliyor</span>
+            </label>
+            <label class="status-radio-pill">
+              <input type="radio" name="taskStatusRadio" value="completed" id="taskStatusCompleted">
+              <span class="status-pill-inner completed-pill"><i class="fa-solid fa-check"></i> Tamamlandı</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAdminTaskBtn">İptal</button>
+          <button type="submit" class="btn btn-primary" id="saveAdminTaskBtn">
+            <i class="fa-solid fa-check"></i>
+            <span id="saveAdminTaskBtnText">Görevi Kaydet</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Görev Silme Onay Modalı -->
+  <div class="modal-backdrop hidden" id="adminTaskDeleteModal" style="z-index: 2300;">
+    <div class="modal-card delete-card">
+      <div class="delete-icon-wrapper" style="background: rgba(244, 63, 94, 0.15); color: var(--expense);">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="modal-title text-center">Görevi Silmek İstiyor musunuz?</h3>
+      <p class="text-center text-muted" id="adminDeleteTaskTitle">Bu görev kalıcı olarak silinecektir.</p>
+      
+      <div class="modal-footer justify-center">
+        <button type="button" class="btn btn-secondary" id="cancelDeleteAdminTaskBtn">Vazgeç</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteAdminTaskBtn">
+          <i class="fa-solid fa-trash"></i> Evet, Görevi Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yetkisiz Erişim / Yetkiniz Dışında Uyarısı Modalı -->
+  <div class="modal-backdrop hidden" id="adminAccessDeniedModal" style="z-index: 2400;">
+    <div class="modal-card access-denied-card">
+      <div class="access-denied-header">
+        <div class="access-denied-icon-wrap">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span class="access-denied-lock-sub">
+            <i class="fa-solid fa-lock"></i>
+          </span>
+        </div>
+        <div class="access-denied-badge">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>ERİŞİM KISITLI</span>
+        </div>
+      </div>
+
+      <div class="access-denied-content">
+        <h3 class="access-denied-title">Yetkiniz Dışında</h3>
+        <p class="access-denied-text">
+          Bu alana erişim <strong>yetkiniz dışındadır</strong>. Günlük yapılacaklar listesi ve aylık görev takip merkezi yalnızca <strong>Admin (Yönetici)</strong> yetkisine sahip kullanıcılar tarafından görüntülenebilir.
+        </p>
+
+        <div class="access-denied-info-box">
+          <div class="info-row">
+            <span class="info-label"><i class="fa-regular fa-envelope"></i> Oturum Açan Hesap:</span>
+            <span class="info-value" id="deniedUserEmail">kullanici@ornek.com</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label"><i class="fa-solid fa-user-shield"></i> Yetki Durumu:</span>
+            <span class="info-value text-danger font-semibold"><i class="fa-solid fa-ban"></i> Standart Kullanıcı (Yetkisiz)</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label"><i class="fa-solid fa-eye-slash"></i> Görev Verileri:</span>
+            <span class="info-value text-muted">Hiçbir görev veya istatistik görüntülenemez</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-center">
+        <button type="button" class="btn btn-secondary" id="closeAccessDeniedBtn">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Pencereyi Kapat</span>
+        </button>
       </div>
     </div>
   </div>

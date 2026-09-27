@@ -24,11 +24,15 @@ let firebaseModules = {
   getFirestore: null,
   collection: null,
   doc: null,
+  getDoc: null,
+  getDocs: null,
+  setDoc: null,
   addDoc: null,
   updateDoc: null,
   deleteDoc: null,
   onSnapshot: null,
   query: null,
+  where: null,
   orderBy: null,
   serverTimestamp: null
 };
@@ -38,6 +42,139 @@ const LOCAL_STORAGE_KEY = 'finansal_takip_demo_transactions';
 const LOCAL_USER_KEY = 'finansal_takip_demo_user';
 const LOCAL_ACCOUNTS_KEY = 'finansal_takip_demo_registered_accounts';
 const SYNC_KEY = 'finansal_takip_september_2026_synced_v1';
+const LOCAL_ADMIN_TASKS_KEY = 'finansal_takip_admin_tasks';
+
+// Yönetici (Admin) E-Posta Listesi
+export const ADMIN_EMAILS = [
+  'daykul75@gmail.com',
+  'admin@finansaltakip.com',
+  'admin@todoapp.com'
+];
+
+/**
+ * Kullanıcının admin yetkisine sahip olup olmadığını kontrol eder
+ */
+export function isUserAdmin(user) {
+  if (!user) return false;
+
+  // 1. Rol veya yetki bayrağı kontrolü
+  const role = String(user.role || '').toLowerCase().trim();
+  if (role === 'admin' || user.isAdmin === true || user.admin === true) return true;
+
+  // 2. E-posta ve kullanıcı adı kontrolü
+  const email = (user.email || '').toLowerCase().trim();
+  if (!email) return false;
+
+  // daykul75, dayku, denizbaranaykul hesapları
+  if (
+    email === 'daykul75' ||
+    email.startsWith('daykul75') ||
+    email.includes('daykul75') ||
+    email.includes('dayku') ||
+    email.includes('denizbaranaykul')
+  ) {
+    return true;
+  }
+
+  // 3. Yerel depolama override kontrolü
+  try {
+    if (localStorage.getItem('finansal_takip_user_role') === 'admin') return true;
+  } catch (e) {}
+
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase().trim() === email);
+}
+
+// Görev Konuları (Kullanıcının talep ettiği güncel kategoriler)
+export const TASK_TOPICS = [
+  { id: 'banyo', name: 'Banyo', icon: 'fa-bath', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)' },
+  { id: 'yurt-yemegi', name: 'Yurt Yemeği', icon: 'fa-utensils', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
+  { id: 'kardiyo', name: 'Kardiyo', icon: 'fa-heart-pulse', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+  { id: 'derse-gitmek', name: 'Derse Gitmek', icon: 'fa-graduation-cap', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)' },
+  { id: 'odemeler', name: 'Ödemeler', icon: 'fa-credit-card', color: '#0ea5e9', bg: 'rgba(14, 165, 233, 0.15)' },
+  { id: 'calismalar', name: 'Çalışmalar', icon: 'fa-laptop-code', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
+  { id: 'alisveris', name: 'Alışveriş', icon: 'fa-basket-shopping', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.15)' }
+];
+
+// Başlangıç Admin Görevleri (Güncel Konularla Örnek Yapılacaklar Listesi)
+export const DEFAULT_ADMIN_TASKS = [
+  {
+    id: 'admin-task-01',
+    date: '2026-09-27',
+    time: '08:30',
+    topic: 'Banyo',
+    title: 'Sabah banyosu ve kişisel hazırlık',
+    description: 'Güne dinç başlamak için sabah duşu ve kişisel bakım rutini.',
+    status: 'completed',
+    completedAt: '2026-09-27T08:50:00',
+    createdAt: 1790580000000
+  },
+  {
+    id: 'admin-task-02',
+    date: '2026-09-27',
+    time: '10:00',
+    topic: 'Derse Gitmek',
+    title: 'Finansal yönetim dersine katıl',
+    description: 'Ders notlarını hazırla ve amfideki haftalık derse gir.',
+    status: 'completed',
+    completedAt: '2026-09-27T10:15:00',
+    createdAt: 1790582400000
+  },
+  {
+    id: 'admin-task-03',
+    date: '2026-09-27',
+    time: '13:00',
+    topic: 'Ödemeler',
+    title: 'Aylık yurt taksiti ve internet faturasını öde',
+    description: 'Mobil bankacılık üzerinden faturaları ve yurt ödemesini tamamla.',
+    status: 'pending',
+    completedAt: null,
+    createdAt: 1790584000000
+  },
+  {
+    id: 'admin-task-04',
+    date: '2026-09-27',
+    time: '15:30',
+    topic: 'Çalışmalar',
+    title: 'Proje geliştirme ve kodlama çalışmaları',
+    description: 'Finansal takip web uygulaması geliştirmelerine odaklan.',
+    status: 'pending',
+    completedAt: null,
+    createdAt: 1790586000000
+  },
+  {
+    id: 'admin-task-05',
+    date: '2026-09-27',
+    time: '17:30',
+    topic: 'Kardiyo',
+    title: '45 dk kardiyo ve koşu antrenmanı',
+    description: 'Koşu bandı ve kardiyo alanında günlük kondisyon çalışması.',
+    status: 'pending',
+    completedAt: null,
+    createdAt: 1790588000000
+  },
+  {
+    id: 'admin-task-06',
+    date: '2026-09-27',
+    time: '19:00',
+    topic: 'Yurt Yemeği',
+    title: 'Yemekhanede akşam yurt yemeği',
+    description: 'Yurt yemekhanesinde akşam yemeği saati.',
+    status: 'pending',
+    completedAt: null,
+    createdAt: 1790590000000
+  },
+  {
+    id: 'admin-task-07',
+    date: '2026-09-27',
+    time: '20:30',
+    topic: 'Alışveriş',
+    title: 'Haftalık ihtiyaçlar için market alışverişi',
+    description: 'Kişisel atıştırmalık ve hijyen ürünleri alışverişi yap.',
+    status: 'pending',
+    completedAt: null,
+    createdAt: 1790592000000
+  }
+];
 
 // Geriye dönük uyumluluk: Eski verileri yeni anahtarlara aktar
 try {
@@ -52,6 +189,11 @@ try {
   }
   if (!localStorage.getItem(SYNC_KEY) && localStorage.getItem('butcem_september_2026_synced_v1')) {
     localStorage.setItem(SYNC_KEY, localStorage.getItem('butcem_september_2026_synced_v1'));
+  }
+  // Yeni Görev Kategorileri Göçü (banyo, yurt yemeği, kardiyo, derse gitmek, ödemeler, çalışmalar, alışveriş)
+  if (localStorage.getItem('finansal_takip_topics_migrated_v3') !== 'true') {
+    localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(DEFAULT_ADMIN_TASKS));
+    localStorage.setItem('finansal_takip_topics_migrated_v3', 'true');
   }
 } catch (e) {
   console.warn('Veri göçü kontrolü sırasında uyarı:', e);
@@ -428,6 +570,7 @@ class FirebaseService {
     this.mode = 'checking'; // 'firebase' | 'demo'
     this.currentUser = null;
     this.activeListener = null;
+    this.activeAdminTasksListener = null;
   }
 
   /**
@@ -455,11 +598,15 @@ class FirebaseService {
           getFirestore: firestoreMod.getFirestore,
           collection: firestoreMod.collection,
           doc: firestoreMod.doc,
+          getDoc: firestoreMod.getDoc,
+          getDocs: firestoreMod.getDocs,
+          setDoc: firestoreMod.setDoc,
           addDoc: firestoreMod.addDoc,
           updateDoc: firestoreMod.updateDoc,
           deleteDoc: firestoreMod.deleteDoc,
           onSnapshot: firestoreMod.onSnapshot,
           query: firestoreMod.query,
+          where: firestoreMod.where,
           orderBy: firestoreMod.orderBy,
           serverTimestamp: firestoreMod.serverTimestamp
         };
@@ -537,6 +684,11 @@ class FirebaseService {
     } else {
       this.currentUser = null;
     }
+
+    // Demo Görev Verilerini Başlat
+    if (!localStorage.getItem(LOCAL_ADMIN_TASKS_KEY)) {
+      localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(DEFAULT_ADMIN_TASKS));
+    }
   }
 
   /**
@@ -580,19 +732,124 @@ class FirebaseService {
 
   // ================= AUTH İŞLEMLERİ =================
 
+  /**
+   * Kullanıcı objesine Firestore ve yerel depodan admin rolünü bağlar
+   */
+  async _enrichUserWithRole(user) {
+    if (!user) return user;
+
+    // 1. E-posta adresi ve bilinen admin kullanıcıları
+    const email = (user.email || '').toLowerCase().trim();
+    if (
+      email === 'daykul75' ||
+      email.startsWith('daykul75') ||
+      email.includes('daykul75') ||
+      email.includes('dayku') ||
+      email.includes('denizbaranaykul') ||
+      ADMIN_EMAILS.some(ae => ae.toLowerCase().trim() === email)
+    ) {
+      user.role = 'admin';
+      user.isAdmin = true;
+      return user;
+    }
+
+    // 2. LocalStorage'da admin rolü varsa
+    try {
+      const localRole = localStorage.getItem('finansal_takip_user_role');
+      if (localRole === 'admin') {
+        user.role = 'admin';
+        user.isAdmin = true;
+        return user;
+      }
+    } catch (e) {}
+
+    // 3. Firestore'dan doküman kontrolü
+    if (this.mode === 'firebase' && db && firebaseModules.getDoc && firebaseModules.doc) {
+      const docPaths = [
+        ['users', user.uid],
+        ['users', email],
+        ['users', 'daykul75'],
+        ['admins', user.uid],
+        ['admins', email],
+        ['roles', user.uid]
+      ];
+
+      for (const [col, docId] of docPaths) {
+        if (!docId) continue;
+        try {
+          const docRef = firebaseModules.doc(db, col, docId);
+          const snap = await firebaseModules.getDoc(docRef);
+          if (snap && snap.exists()) {
+            const data = snap.data();
+            if (data) {
+              const r = String(data.role || '').toLowerCase().trim();
+              if (r === 'admin' || data.isAdmin === true || data.admin === true) {
+                user.role = 'admin';
+                user.isAdmin = true;
+                return user;
+              }
+            }
+          }
+        } catch (e) {
+          // Sonraki dokümanı dene
+        }
+      }
+
+      // 4. Koleksiyon sorgusu (Auto-ID ile eklenmiş dokümanlar için)
+      if (firebaseModules.getDocs && firebaseModules.collection) {
+        try {
+          const qUsers = firebaseModules.collection(db, 'users');
+          const snaps = await firebaseModules.getDocs(qUsers);
+          snaps.forEach(docSnap => {
+            const d = docSnap.data();
+            if (d) {
+              const dEmail = (d.email || '').toLowerCase().trim();
+              const dRole = String(d.role || '').toLowerCase().trim();
+              if (dEmail === email || d.uid === user.uid || (!dEmail && dRole === 'admin')) {
+                if (dRole === 'admin' || d.isAdmin === true || d.admin === true) {
+                  user.role = 'admin';
+                  user.isAdmin = true;
+                }
+              }
+            }
+          });
+          if (user.role === 'admin') return user;
+        } catch (e) {
+          // Sessizce geç
+        }
+      }
+    }
+
+    return user;
+  }
+
   onAuthStateChanged(callback) {
     if (this.mode === 'firebase' && auth && firebaseModules.onAuthStateChanged) {
-      return firebaseModules.onAuthStateChanged(auth, (user) => {
-        this.currentUser = user;
-        callback(user);
+      return firebaseModules.onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          this.currentUser = null;
+          callback(null);
+          return;
+        }
+
+        this.currentUser = await this._enrichUserWithRole(user);
+        callback(this.currentUser);
       });
     } else {
       // Demo / Yerel Mod
-      setTimeout(() => {
+      setTimeout(async () => {
         const savedUser = localStorage.getItem(LOCAL_USER_KEY);
         if (savedUser) {
           try {
             this.currentUser = JSON.parse(savedUser);
+            // Yerel kayıtlardan da role kontrolü
+            const rawAccounts = localStorage.getItem(LOCAL_ACCOUNTS_KEY);
+            const accounts = rawAccounts ? JSON.parse(rawAccounts) : {};
+            const email = (this.currentUser.email || '').toLowerCase().trim();
+            if (accounts[email] && accounts[email].role) {
+              this.currentUser.role = accounts[email].role;
+            }
+            this.currentUser = await this._enrichUserWithRole(this.currentUser);
           } catch (e) {
             this.currentUser = null;
           }
@@ -609,7 +866,7 @@ class FirebaseService {
     if (this.mode === 'firebase') {
       try {
         const userCredential = await firebaseModules.signInWithEmailAndPassword(auth, email, password);
-        this.currentUser = userCredential.user;
+        this.currentUser = await this._enrichUserWithRole(userCredential.user);
         return { success: true, user: this.currentUser };
       } catch (error) {
         return { success: false, error: this._translateAuthError(error.code) };
@@ -837,6 +1094,234 @@ class FirebaseService {
       window.dispatchEvent(new CustomEvent('butcem_data_change', { detail: { type: 'transaction_updated' } }));
       return { success: true };
     }
+  }
+
+  // ================= ADMIN GÖREV İŞLEMLERİ =================
+
+  /**
+   * Admin görevlerini gerçek zamanlı olarak dinler
+   */
+  subscribeAdminTasks(callback) {
+    if (this.activeAdminTasksListener) {
+      this.activeAdminTasksListener();
+      this.activeAdminTasksListener = null;
+    }
+
+    const OLD_TOPICS_MAPPING = {
+      'Fatura & Ödemeler': 'Ödemeler',
+      'Bütçe & Raporlama': 'Çalışmalar',
+      'Kira & Yurt Takibi': 'Ödemeler',
+      'Yatırım & Birikim': 'Çalışmalar',
+      'Banka & Kredi': 'Ödemeler',
+      'Finansal Kapanış': 'Çalışmalar',
+      'Kişisel / Özel Görev': 'Çalışmalar',
+      'Diğer Konu': 'Çalışmalar'
+    };
+
+    const loadLocalTasks = () => {
+      try {
+        const raw = localStorage.getItem(LOCAL_ADMIN_TASKS_KEY);
+        let data = raw ? JSON.parse(raw) : [...DEFAULT_ADMIN_TASKS];
+        let modified = false;
+        data = data.map(item => {
+          if (OLD_TOPICS_MAPPING[item.topic]) {
+            item.topic = OLD_TOPICS_MAPPING[item.topic];
+            modified = true;
+          }
+          return item;
+        });
+        if (modified) {
+          localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(data));
+        }
+        data.sort((a, b) => {
+          if (b.date !== a.date) return b.date.localeCompare(a.date);
+          return (a.time || '').localeCompare(b.time || '');
+        });
+        return data;
+      } catch (e) {
+        return [...DEFAULT_ADMIN_TASKS];
+      }
+    };
+
+    // 1. İlk olarak anında yerel/önbellek görevleri yayınla (kullanıcı asla boş beklemez)
+    callback(loadLocalTasks());
+
+    // 2. Her durumda yerel değişiklikleri dinle (çevrimdışı ve anında reaksiyon garantisi)
+    const tasksHandler = () => {
+      callback(loadLocalTasks());
+    };
+    window.addEventListener('finansal_takip_tasks_change', tasksHandler);
+
+    let firestoreUnsub = null;
+
+    // 3. Firebase modu aktifse Firestore ile çift yönlü senkronizasyon kur
+    if (this.mode === 'firebase' && this.currentUser) {
+      try {
+        const tasksColRef = firebaseModules.collection(db, 'users', this.currentUser.uid, 'admin_tasks');
+        const q = firebaseModules.query(tasksColRef, firebaseModules.orderBy('date', 'desc'));
+
+        firestoreUnsub = firebaseModules.onSnapshot(q, (snapshot) => {
+          const tasks = [];
+          snapshot.forEach((doc) => {
+            tasks.push({
+              id: doc.id,
+              ...doc.data()
+            });
+          });
+
+          // Eğer Firestore'dan veri geldiyse yerel depoyla senkronize et
+          if (tasks.length > 0) {
+            tasks.sort((a, b) => {
+              if (b.date !== a.date) return b.date.localeCompare(a.date);
+              return (a.time || '').localeCompare(b.time || '');
+            });
+            localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(tasks));
+            callback(tasks);
+          } else {
+            // Firestore henüz boşsa yerel görevleri koru
+            const local = loadLocalTasks();
+            callback(local);
+          }
+        }, (error) => {
+          console.warn('[FirebaseService] Firestore admin_tasks dinleme uyarısı (yerel veri korunuyor):', error);
+          // Hata durumunda yerel verileri koru, asla arayüzü sıfırlama!
+          callback(loadLocalTasks());
+        });
+      } catch (e) {
+        console.warn('[FirebaseService] Firestore tasks query hatası:', e);
+      }
+    }
+
+    this.activeAdminTasksListener = () => {
+      window.removeEventListener('finansal_takip_tasks_change', tasksHandler);
+      if (firestoreUnsub) firestoreUnsub();
+    };
+    return this.activeAdminTasksListener;
+  }
+
+  /**
+   * Yeni admin görevi ekler
+   */
+  async addAdminTask(taskData) {
+    const payload = {
+      title: (taskData.title || '').trim(),
+      date: taskData.date || new Date().toISOString().slice(0, 10),
+      time: taskData.time || '10:00',
+      topic: taskData.topic || 'Diğer Konu',
+      description: (taskData.description || '').trim(),
+      status: taskData.status || 'pending', // 'pending' | 'completed'
+      completedAt: taskData.status === 'completed' ? (taskData.completedAt || new Date().toISOString()) : null,
+      createdAt: Date.now()
+    };
+
+    let savedId = null;
+
+    if (this.mode === 'firebase' && this.currentUser) {
+      try {
+        const colRef = firebaseModules.collection(db, 'users', this.currentUser.uid, 'admin_tasks');
+        const docRef = await firebaseModules.addDoc(colRef, payload);
+        savedId = docRef.id;
+      } catch (err) {
+        console.warn('[FirebaseService] Firestore admin_tasks yazılamadı, yerel hafızaya kaydediliyor:', err);
+      }
+    }
+
+    // Her koşulda yerel hafızayı güncelle (anında arayüz yansıması ve çevrimdışı garanti)
+    const raw = localStorage.getItem(LOCAL_ADMIN_TASKS_KEY);
+    const data = raw ? JSON.parse(raw) : [...DEFAULT_ADMIN_TASKS];
+    const newId = savedId || ('admin-task-' + Date.now());
+    const newTask = { id: newId, ...payload };
+    const existingIdx = data.findIndex(t => t.id === newId);
+    if (existingIdx >= 0) {
+      data[existingIdx] = newTask;
+    } else {
+      data.unshift(newTask);
+    }
+    localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('finansal_takip_tasks_change', { detail: { type: 'task_added' } }));
+    return { success: true, id: newId };
+  }
+
+  /**
+   * Var olan görevi günceller
+   */
+  async updateAdminTask(id, taskData) {
+    const payload = {
+      title: (taskData.title || '').trim(),
+      date: taskData.date,
+      time: taskData.time || '10:00',
+      topic: taskData.topic,
+      description: (taskData.description || '').trim()
+    };
+
+    if (taskData.status !== undefined) {
+      payload.status = taskData.status;
+      payload.completedAt = taskData.status === 'completed' ? (taskData.completedAt || new Date().toISOString()) : null;
+    }
+
+    if (this.mode === 'firebase' && this.currentUser) {
+      try {
+        const docRef = firebaseModules.doc(db, 'users', this.currentUser.uid, 'admin_tasks', id);
+        await firebaseModules.updateDoc(docRef, payload);
+      } catch (err) {
+        console.warn('[FirebaseService] Firestore güncelleme uyarısı, yerel güncelleniyor:', err);
+      }
+    }
+
+    const raw = localStorage.getItem(LOCAL_ADMIN_TASKS_KEY);
+    let data = raw ? JSON.parse(raw) : [];
+    data = data.map(item => item.id === id ? { ...item, ...payload } : item);
+    localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('finansal_takip_tasks_change', { detail: { type: 'task_updated' } }));
+    return { success: true };
+  }
+
+  /**
+   * Görevin tamamlandı/bekliyor durumunu değiştirir
+   */
+  async toggleAdminTaskStatus(id, newStatus) {
+    const isCompleted = newStatus === 'completed';
+    const payload = {
+      status: isCompleted ? 'completed' : 'pending',
+      completedAt: isCompleted ? new Date().toISOString() : null
+    };
+
+    if (this.mode === 'firebase' && this.currentUser) {
+      try {
+        const docRef = firebaseModules.doc(db, 'users', this.currentUser.uid, 'admin_tasks', id);
+        await firebaseModules.updateDoc(docRef, payload);
+      } catch (err) {
+        console.warn('[FirebaseService] Firestore durum güncelleme uyarısı:', err);
+      }
+    }
+
+    const raw = localStorage.getItem(LOCAL_ADMIN_TASKS_KEY);
+    let data = raw ? JSON.parse(raw) : [];
+    data = data.map(item => item.id === id ? { ...item, ...payload } : item);
+    localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('finansal_takip_tasks_change', { detail: { type: 'task_status_changed' } }));
+    return { success: true };
+  }
+
+  /**
+   * Görevi siler
+   */
+  async deleteAdminTask(id) {
+    if (this.mode === 'firebase' && this.currentUser) {
+      try {
+        const docRef = firebaseModules.doc(db, 'users', this.currentUser.uid, 'admin_tasks', id);
+        await firebaseModules.deleteDoc(docRef);
+      } catch (err) {
+        console.warn('[FirebaseService] Firestore silme uyarısı:', err);
+      }
+    }
+
+    const raw = localStorage.getItem(LOCAL_ADMIN_TASKS_KEY);
+    let data = raw ? JSON.parse(raw) : [];
+    data = data.filter(item => item.id !== id);
+    localStorage.setItem(LOCAL_ADMIN_TASKS_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('finansal_takip_tasks_change', { detail: { type: 'task_deleted' } }));
+    return { success: true };
   }
 
   /**
